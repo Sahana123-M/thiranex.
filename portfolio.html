@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sahana M — Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#09090f;--fg:#f0ede8;--card:#111118;--border:rgba(240,237,232,0.08);--lime:#c8f135;--lime-fg:#09090f;--sec:#1a1a26;--muted:#8a8a9a;--r:6px}
+    html{scroll-behavior:smooth;font-size:16px}
+    body{background:var(--bg);color:var(--fg);font-family:'DM Sans',system-ui,sans-serif;line-height:1.6;overflow-x:hidden}
+    ::-webkit-scrollbar{display:none}*{scrollbar-width:none}
+    a{color:inherit;text-decoration:none}
+    button{cursor:pointer;background:none;border:none;font-family:inherit;color:inherit}
+    input,textarea{font-family:inherit}
+    header{position:fixed;top:0;left:0;right:0;z-index:50;border-bottom:1px solid var(--border);background:rgba(9,9,15,.82);backdrop-filter:blur(12px)}
+    .nav-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between}
+    .nav-logo{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--lime);transition:opacity .2s}
+    .nav-logo:hover{opacity:.65}
+    .nav-links{display:flex;align-items:center;gap:32px}
+    .nav-link{font-size:14px;color:var(--muted);transition:color .2s}
+    .nav-link:hover,.nav-link.active{color:var(--fg)}
+    .nav-link.active{color:var(--lime)}
+    .nav-cta{font-size:13px;padding:6px 16px;border:1px solid var(--lime);color:var(--lime);border-radius:var(--r);transition:all .2s;display:inline-block}
+    .nav-cta:hover{background:var(--lime);color:var(--lime-fg)}
+    .hamburger{display:none;color:var(--fg)}
+    .mobile-nav{display:none;flex-direction:column;gap:16px;padding:20px 24px;border-top:1px solid var(--border);background:var(--bg)}
+    .mobile-nav.open{display:flex}
+    .mob-link{font-size:15px;color:var(--muted);text-align:left}
+    .mob-link.active{color:var(--lime)}
+    .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+    section{padding:96px 0}
+    #hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding-top:64px;position:relative}
+    .lbl{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--lime);margin-bottom:12px}
+    .hdg{font-family:'Fraunces',Georgia,serif;font-size:clamp(2.4rem,5vw,3.6rem);font-weight:300;line-height:1.1}
+    .hero-grid{display:grid;grid-template-columns:1fr auto;gap:48px;align-items:flex-end;padding-bottom:96px}
+    .hero-tag{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--lime);margin-bottom:24px}
+    .hero-name{font-family:'Fraunces',Georgia,serif;font-size:clamp(4rem,10vw,7rem);font-weight:300;line-height:.92;margin-bottom:28px}
+    .hero-name em{color:var(--lime);font-style:normal}
+    .hero-sub{font-size:18px;color:var(--muted);max-width:480px;line-height:1.65;margin-bottom:36px}
+    .hero-btns{display:flex;flex-wrap:wrap;gap:14px}
+    .btn-p{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--lime);color:var(--lime-fg);font-size:14px;font-weight:500;border-radius:var(--r);transition:opacity .2s;border:none;cursor:pointer;font-family:inherit}
+    .btn-p:hover{opacity:.88}
+    .btn-o{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border:1px solid var(--border);color:var(--fg);font-size:14px;font-weight:500;border-radius:var(--r);transition:border-color .2s;background:none;cursor:pointer;font-family:inherit}
+    .btn-o:hover{border-color:rgba(240,237,232,.25)}
+    .socials{display:flex;flex-direction:column;align-items:center;gap:18px;padding-bottom:16px}
+    .socials .vline{width:1px;height:64px;background:var(--border)}
+    .socials a{color:var(--muted);transition:color .2s}
+    .socials a:hover{color:var(--lime)}
+    .scroll-hint{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted)}
+    .scroll-hint span{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+    .bounce{animation:bonce 1.8s infinite;display:inline-block}
+    @keyframes bonce{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+    .about-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:64px;align-items:start}
+    .edu-card{border:1px solid var(--border);border-radius:var(--r);padding:20px 24px;margin-bottom:12px;background:var(--card)}
+    .edu-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px}
+    .edu-title{font-weight:500}
+    .edu-loc{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap}
+    .edu-sub{font-size:13px;color:var(--muted);font-style:italic;margin-bottom:6px}
+    .edu-date{font-family:'DM Mono',monospace;font-size:11px;color:rgba(200,241,53,.65)}
+    .cert-card{display:flex;align-items:flex-start;gap:12px;border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;background:var(--card)}
+    .cert-ico{color:var(--lime);margin-top:2px;flex-shrink:0}
+    .cert-name{font-size:13px}
+    .cert-org{font-size:11px;color:var(--muted);margin-top:2px}
+    .abt-text{color:var(--muted);line-height:1.75;margin-bottom:16px;font-size:15px}
+    .stats{display:flex;flex-wrap:wrap;gap:32px;margin-top:36px}
+    .sv{font-family:'Fraunces',Georgia,serif;font-size:2rem;font-weight:300;color:var(--lime)}
+    .sl{font-size:11px;color:var(--muted);margin-top:2px}
+    .proj-card{display:grid;grid-template-columns:2fr 3fr;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px;transition:border-color .3s}
+    .proj-card:hover{border-color:rgba(240,237,232,.15)}
+    .proj-img{position:relative;overflow:hidden;background:#1a1a26;min-height:220px}
+    .proj-img img{width:100%;height:100%;object-fit:cover;opacity:.5;transition:opacity .5s,transform .5s;display:block}
+    .proj-card:hover .proj-img img{opacity:.72;transform:scale(1.05)}
+    .proj-idx{position:absolute;top:14px;left:14px;font-family:'DM Mono',monospace;font-size:11px;color:rgba(200,241,53,.55);letter-spacing:.1em}
+    .proj-yr{position:absolute;bottom:14px;left:14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+    .proj-body{padding:28px 32px;display:flex;flex-direction:column;justify-content:space-between;background:var(--card)}
+    .proj-title{font-family:'Fraunces',Georgia,serif;font-size:1.5rem;font-weight:300;margin-bottom:4px}
+    .proj-sub{font-family:'DM Mono',monospace;font-size:10px;color:rgba(200,241,53,.65);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px}
+    .proj-desc{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px}
+    .proj-bul{list-style:none;margin-bottom:20px}
+    .proj-bul li{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--muted);margin-bottom:6px}
+    .bdot{width:5px;height:5px;border-radius:50%;background:rgba(200,241,53,.45);margin-top:6px;flex-shrink:0}
+    .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px}
+    .tag{font-family:'DM Mono',monospace;font-size:11px;padding:4px 10px;background:var(--sec);border-radius:4px}
+    .proj-links{display:flex;gap:20px;padding-top:20px;border-top:1px solid var(--border)}
+    .proj-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);transition:color .2s}
+    .proj-link:hover{color:var(--lime)}
+    #skills{background:rgba(26,26,38,.4)}
+    .sk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px}
+    .sk-cat{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--lime);margin-bottom:18px}
+    .sk-list{list-style:none}
+    .sk-list li{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-bottom:10px;transition:color .2s}
+    .sk-list li:hover{color:var(--fg)}
+    .sdot{width:4px;height:4px;border-radius:50%;background:rgba(200,241,53,.35);flex-shrink:0}
+    .ct-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start}
+    .ct-link{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted);margin-bottom:14px;transition:color .2s}
+    .ct-link:hover{color:var(--lime)}
+    .fl{display:block;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+    .ff{width:100%;padding:12px 16px;background:var(--sec);color:var(--fg);border:1px solid var(--border);border-radius:var(--r);font-size:13px;margin-bottom:18px;outline:none;transition:border-color .2s;font-family:inherit}
+    .ff::placeholder{color:rgba(138,138,154,.45)}
+    .ff:focus{border-color:var(--lime)}
+    textarea.ff{resize:none}
+    .fsub{width:100%;padding:14px;background:var(--lime);color:var(--lime-fg);font-size:13px;font-weight:500;border-radius:var(--r);transition:opacity .2s;border:none;cursor:pointer;font-family:inherit}
+    .fsub:hover{opacity:.88}
+    .sent{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:72px 24px;border:1px solid rgba(200,241,53,.2);border-radius:var(--r);background:rgba(200,241,53,.04)}
+    .sent-t{font-family:'Fraunces',Georgia,serif;font-size:2.5rem;font-weight:300;color:var(--lime);margin-bottom:10px}
+    .sent-s{font-size:13px;color:var(--muted)}
+    footer{border-top:1px solid var(--border);padding:36px 0}
+    .ft{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+    .fc{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+    .fi{display:flex;gap:20px}
+    .fi a{color:var(--muted);transition:color .2s}
+    .fi a:hover{color:var(--lime)}
+    @media(max-width:900px){.nav-links{display:none}.hamburger{display:block}.hero-grid{grid-template-columns:1fr}.socials{display:none}.about-grid{grid-template-columns:1fr}.proj-card{grid-template-columns:1fr}.proj-img{min-height:180px}.sk-grid{grid-template-columns:repeat(2,1fr)}.ct-grid{grid-template-columns:1fr;gap:48px}}
+    @media(max-width:520px){.sk-grid{grid-template-columns:1fr 1fr}.hero-name{font-size:3.6rem}}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect}=React;
+const NAV=["About","Projects","Skills","Contact"];
+const PROJECTS=[
+  {title:"Mind Guard",sub:"AI Based Mental Health & Psychological Support System",year:"2026",
+   desc:"An AI-driven mental health support platform that helps users manage stress, anxiety, and depression through real-time analysis and personalized guidance. Utilizes Machine Learning and NLP to analyze user text, speech, and behavioral data for early detection of mental health concerns.",
+   bullets:["AI chatbots, mood tracking, calm-down tools, and interactive mental health assessments","Interactive dashboards for therapists and caregivers to monitor mental health trends","Teletherapy support and predictive analytics connecting users with licensed therapists"],
+   tech:["HTML","CSS","React","Firebase"],
+   img:"https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&h=500&fit=crop&auto=format"},
+  {title:"UConnect",sub:"Community Resource Discovery Platform",year:"2025",
+   desc:"A digital platform that connects people with essential nearby services such as free clinics, food banks, shelters, and vocational training centers — bridging information gaps and improving access to social welfare support.",
+   bullets:["Responsive web interface for easy access and user-friendly navigation","Location-based service listings to surface nearby community resources","Aimed to increase social service visibility for underserved communities"],
+   tech:["HTML","CSS","JavaScript"],
+   img:"https://images.unsplash.com/photo-1573164713988-8665fc963095?w=800&h=500&fit=crop&auto=format"},
+];
+const SKILLS=[
+  {cat:"Languages",items:["Java","Python","C/C++","JavaScript","SQL (Postgres)","HTML/CSS"]},
+  {cat:"Frameworks",items:["React","Node.js"]},
+  {cat:"Developer Tools",items:["Git","Google Cloud Platform","VS Code","Visual Studio"]},
+  {cat:"Libraries",items:["pandas","NumPy","Matplotlib"]},
+];
+const CERTS=[
+  {org:"NPTEL",name:"Soft Skill Development"},
+  {org:"Infosys Springboard",name:"ReactJS"},
+  {org:"Oracle Cloud",name:"AI Foundations Associate 2025"},
+];
+const Arr=()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>;
+const GH=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>;
+const LI=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>;
+const ML=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
+const MN=()=><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
+const CL=()=><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const EX=()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
+const AW=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>;
+const CV=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>;
+
+function useScrollSpy(ids){
+  const[active,setActive]=useState(ids[0]);
+  useEffect(()=>{
+    const h=()=>{
+      const y=window.scrollY+120;
+      for(let i=ids.length-1;i>=0;i--){
+        const el=document.getElementById(ids[i].toLowerCase());
+        if(el&&el.offsetTop<=y){setActive(ids[i]);return;}
+      }
+    };
+    window.addEventListener("scroll",h,{passive:true});
+    return()=>window.removeEventListener("scroll",h);
+  },[]);
+  return active;
+}
+
+function App(){
+  const[menu,setMenu]=useState(false);
+  const[form,setForm]=useState({name:"",email:"",message:""});
+  const[sent,setSent]=useState(false);
+  const active=useScrollSpy(NAV);
+  const go=(id)=>{document.getElementById(id.toLowerCase())?.scrollIntoView({behavior:"smooth"});setMenu(false);};
+
+  return(
+    <div>
+      <header>
+        <div className="nav-inner">
+          <button className="nav-logo" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>SM</button>
+          <nav className="nav-links">
+            {NAV.map(l=><button key={l} className={"nav-link"+(active===l?" active":"")} onClick={()=>go(l)}>{l}</button>)}
+            <a href="mailto:sahana123.mr@gmail.com" className="nav-cta">Hire me</a>
+          </nav>
+          <button className="hamburger" onClick={()=>setMenu(o=>!o)}>{menu?<CL/>:<MN/>}</button>
+        </div>
+        <div className={"mobile-nav"+(menu?" open":"")}>
+          {NAV.map(l=><button key={l} className={"mob-link"+(active===l?" active":"")} onClick={()=>go(l)}>{l}</button>)}
+        </div>
+      </header>
+
+      <section id="hero">
+        <div className="wrap">
+          <div className="hero-grid">
+            <div>
+              <p className="hero-tag">— Open to opportunities</p>
+              <h1 className="hero-name">Sahana<br/><em>M.</em></h1>
+              <p className="hero-sub">Computer Science student at R.M.D Engineering College building AI-driven platforms and community tools. Passionate about applying mathematics and logic to meaningful software.</p>
+              <div className="hero-btns">
+                <button className="btn-p" onClick={()=>go("Projects")}>View projects <Arr/></button>
+                <button className="btn-o" onClick={()=>go("Contact")}>Get in touch</button>
+              </div>
+            </div>
+            <div className="socials">
+              <div className="vline"></div>
+              <a href="mailto:sahana123.mr@gmail.com" aria-label="Email"><ML/></a>
+              <a href="https://linkedin.com/in/sahana-m-1aa16a32b" target="_blank" rel="noreferrer" aria-label="LinkedIn"><LI/></a>
+              <a href="#" aria-label="GitHub"><GH/></a>
+              <div className="vline"></div>
+            </div>
+          </div>
+        </div>
+        <div className="scroll-hint"><span>scroll</span><span className="bounce"><CV/></span></div>
+      </section>
+
+      <section id="about">
+        <div className="wrap">
+          <div className="about-grid">
+            <div>
+              <p className="lbl">Education</p>
+              <div className="edu-card">
+                <div className="edu-hdr"><p className="edu-title">R.M.D Engineering College</p><span className="edu-loc">Chennai, India</span></div>
+                <p className="edu-sub">B.E. in Computer Science and Engineering</p>
+                <p className="edu-date">Aug. 2024 — May 2028</p>
+              </div>
+              <p className="lbl" style={{marginTop:"28px"}}>Certifications</p>
+              {CERTS.map(c=>(
+                <div className="cert-card" key={c.name}>
+                  <span className="cert-ico"><AW/></span>
+                  <div><p className="cert-name">{c.name}</p><p className="cert-org">{c.org}</p></div>
+                </div>
+              ))}
+            </div>
+            <div>
+              <p className="lbl">01 — About</p>
+              <h2 className="hdg" style={{marginBottom:"28px"}}>Logic meets <em style={{fontStyle:"italic"}}>creativity.</em></h2>
+              <p className="abt-text">I'm a third-year Computer Science and Engineering student at R.M.D Engineering College with a strong interest in mathematics, logical thinking, and problem-solving.</p>
+              <p className="abt-text">Skilled in C++, Python, and Java, I focus on applying analytical and mathematical concepts to develop efficient software solutions — from AI-driven mental health platforms to community resource tools.</p>
+              <p className="abt-text">Eager to continuously learn, tackle challenging problems, and contribute to innovative projects that combine technology and logical reasoning.</p>
+              <div className="stats">
+                {[{l:"Year of study",v:"3rd"},{l:"Projects built",v:"2+"},{l:"Certifications",v:"3"}].map(s=>(
+                  <div key={s.l}><p className="sv">{s.v}</p><p className="sl">{s.l}</p></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="projects">
+        <div className="wrap">
+          <p className="lbl">02 — Work</p>
+          <h2 className="hdg" style={{marginBottom:"48px"}}>Selected projects</h2>
+          {PROJECTS.map((p,i)=>(
+            <article className="proj-card" key={p.title}>
+              <div className="proj-img">
+                <img src={p.img} alt={p.title}/>
+                <span className="proj-idx">{String(i+1).padStart(2,"0")}</span>
+                <span className="proj-yr">{p.year}</span>
+              </div>
+              <div className="proj-body">
+                <div>
+                  <h3 className="proj-title">{p.title}</h3>
+                  <p className="proj-sub">{p.sub}</p>
+                  <p className="proj-desc">{p.desc}</p>
+                  <ul className="proj-bul">{p.bullets.map(b=><li key={b}><span className="bdot"></span>{b}</li>)}</ul>
+                  <div className="tags">{p.tech.map(t=><span className="tag" key={t}>{t}</span>)}</div>
+                </div>
+                <div className="proj-links">
+                  <a href="#" className="proj-link"><GH/> GitHub</a>
+                  <a href="#" className="proj-link"><EX/> Live demo</a>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="skills">
+        <div className="wrap">
+          <p className="lbl">03 — Toolkit</p>
+          <h2 className="hdg" style={{marginBottom:"48px"}}>Skills &amp; technologies</h2>
+          <div className="sk-grid">
+            {SKILLS.map(g=>(
+              <div key={g.cat}>
+                <p className="sk-cat">{g.cat}</p>
+                <ul className="sk-list">{g.items.map(s=><li key={s}><span className="sdot"></span>{s}</li>)}</ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="contact">
+        <div className="wrap">
+          <div className="ct-grid">
+            <div>
+              <p className="lbl">04 — Contact</p>
+              <h2 className="hdg">Let's build<br/><em style={{fontStyle:"italic"}}>something.</em></h2>
+              <p style={{color:"var(--muted)",marginTop:"20px",lineHeight:"1.75",fontSize:"14px",maxWidth:"320px"}}>I'm a third-year student actively looking for internships, collaborative projects, and learning opportunities. If you have something interesting, reach out.</p>
+              <a href="mailto:sahana123.mr@gmail.com" className="ct-link" style={{marginTop:"36px"}}><ML/> sahana123.mr@gmail.com</a>
+              <a href="https://linkedin.com/in/sahana-m-1aa16a32b" target="_blank" rel="noreferrer" className="ct-link" style={{marginTop:"0"}}><LI/> linkedin.com/in/sahana-m-1aa16a32b</a>
+              <a href="tel:6381158984" className="ct-link" style={{marginTop:"0"}}><ML/> 6381158984</a>
+            </div>
+            {sent?(
+              <div className="sent"><p className="sent-t">Sent.</p><p className="sent-s">Thanks — I'll get back to you soon.</p></div>
+            ):(
+              <form onSubmit={e=>{e.preventDefault();setSent(true);}}>
+                <label className="fl" htmlFor="fn">Name</label>
+                <input id="fn" type="text" required placeholder="Your name" className="ff" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+                <label className="fl" htmlFor="fe">Email</label>
+                <input id="fe" type="email" required placeholder="your@email.com" className="ff" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
+                <label className="fl" htmlFor="fm">Message</label>
+                <textarea id="fm" required rows="5" placeholder="Tell me about your project or opportunity..." className="ff" value={form.message} onChange={e=>setForm(f=>({...f,message:e.target.value}))}/>
+                <button type="submit" className="fsub">Send message</button>
+              </form>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div className="wrap">
+          <div className="ft">
+            <p className="fc">© 2026 Sahana M — B.E. CSE, R.M.D Engineering College</p>
+            <div className="fi">
+              <a href="mailto:sahana123.mr@gmail.com" aria-label="Email"><ML/></a>
+              <a href="https://linkedin.com/in/sahana-m-1aa16a32b" target="_blank" rel="noreferrer" aria-label="LinkedIn"><LI/></a>
+              <a href="#" aria-label="GitHub"><GH/></a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
