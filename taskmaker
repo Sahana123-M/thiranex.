@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskMaster — Sahana M</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,900&family=Geist+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body,#root{height:100%;overflow:hidden}
+    body{background:#fff;color:#0a0a0a;font-family:'Bricolage Grotesque',system-ui,sans-serif;line-height:1.5}
+    *{scrollbar-width:thin;scrollbar-color:#0a0a0a #f5f5f5}
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-thumb{background:#0a0a0a}
+    ::-webkit-scrollbar-track{background:#f5f5f5}
+    button{cursor:pointer;font-family:inherit;background:none;border:none}
+    input,textarea,select{font-family:inherit}
+    .mono{font-family:'Geist Mono',monospace}
+    select{appearance:none;-webkit-appearance:none}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useMemo}=React;
+
+/* ── Seed Tasks ── */
+const INIT=[
+  {id:"1",title:"Build Portfolio Website",desc:"Complete dashboard and responsive pages for personal portfolio showcasing all projects and skills.",pri:"high",status:"in_progress",due:"2026-07-15",prog:80,tag:"Portfolio"},
+  {id:"2",title:"Complete Mind Guard Auth Module",desc:"Implement Firebase authentication for the AI mental health support platform.",pri:"high",status:"in_progress",due:"2026-07-10",prog:70,tag:"Mind Guard"},
+  {id:"3",title:"Submit Internship Applications",desc:"Apply to 5 software engineering internships with updated resume and cover letters.",pri:"high",status:"pending",due:"2026-07-08",prog:30,tag:"Career"},
+  {id:"4",title:"Learn Node.js",desc:"Complete Infosys Springboard Node.js module and build a REST API project.",pri:"medium",status:"pending",due:"2026-07-20",prog:20,tag:"Learning"},
+  {id:"5",title:"Oracle Cloud AI Exam Prep",desc:"Revise AI Foundations topics and practice 100 mock questions before certification.",pri:"medium",status:"in_progress",due:"2026-07-25",prog:55,tag:"Certification"},
+  {id:"6",title:"UConnect Location API",desc:"Integrate location-based service listings using browser geolocation API.",pri:"medium",status:"pending",due:"2026-07-18",prog:0,tag:"UConnect"},
+  {id:"7",title:"React Practice Projects",desc:"Build 3 mini projects to strengthen React hooks and state management.",pri:"low",status:"pending",due:"2026-07-30",prog:10,tag:"Learning"},
+  {id:"8",title:"Firebase Integration — Mind Guard",desc:"Complete Firestore real-time database integration for mood tracking dashboard.",pri:"high",status:"completed",due:"2026-07-05",prog:100,tag:"Mind Guard"},
+  {id:"9",title:"NLP Data Pipeline",desc:"Build preprocessing pipeline for text/speech data used in mental health analysis.",pri:"medium",status:"completed",due:"2026-07-03",prog:100,tag:"Mind Guard"},
+  {id:"10",title:"SQL Database Schema Design",desc:"Design normalized PostgreSQL schema for UConnect services database.",pri:"low",status:"completed",due:"2026-07-01",prog:100,tag:"UConnect"},
+];
+
+const WEEK=[
+  {day:"Mon",done:2,pend:3},{day:"Tue",done:4,pend:2},{day:"Wed",done:3,pend:4},
+  {day:"Thu",done:5,pend:1},{day:"Fri",done:6,pend:2},{day:"Sat",done:2,pend:3},{day:"Sun",done:1,pend:1},
+];
+
+const PC={
+  high:  {label:"HIGH",  bg:"#ff3b00",fg:"#fff",   bd:"#ff3b00"},
+  medium:{label:"MEDIUM",bg:"#ffe566",fg:"#0a0a0a",bd:"#e6c800"},
+  low:   {label:"LOW",   bg:"#e8e8e8",fg:"#666",   bd:"#ccc"},
+};
+const SC={
+  pending:    {label:"Pending",    bg:"#fff8e1",fg:"#b45309",dot:"#f59e0b"},
+  in_progress:{label:"In Progress",bg:"#eff6ff",fg:"#1d4ed8",dot:"#3b82f6"},
+  completed:  {label:"Completed",  bg:"#f0fdf4",fg:"#15803d",dot:"#22c55e"},
+};
+
+const uid=()=>Math.random().toString(36).slice(2,9);
+const todayStr=()=>new Date().toISOString().split("T")[0];
+const B=(s)=>({border:`2px solid #0a0a0a`,padding:s});
+
+/* ── Stat Card ── */
+function Stat({icon,label,value,sub,dark}){
+  return(
+    <div style={{border:"2px solid #0a0a0a",padding:"14px",background:dark?"#0a0a0a":"#fff",color:dark?"#fff":"#0a0a0a",display:"flex",flexDirection:"column",gap:"4px",minWidth:0}}>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <span style={{fontSize:"18px"}}>{icon}</span>
+        {sub&&<span className="mono" style={{fontSize:"10px",fontWeight:700,color:dark?"#c8f135":"#22c55e"}}>{sub}</span>}
+      </div>
+      <p style={{fontSize:"1.8rem",fontWeight:900,lineHeight:1}}>{value}</p>
+      <p className="mono" style={{fontSize:"10px",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:700,color:dark?"rgba(255,255,255,0.6)":"#666"}}>{label}</p>
+    </div>
+  );
+}
+
+/* ── Filter Dropdown ── */
+function FD({value,onChange,opts}){
+  return(
+    <div style={{position:"relative"}}>
+      <select value={value} onChange={e=>onChange(e.target.value)} className="mono"
+        style={{border:"2px solid #0a0a0a",padding:"5px 26px 5px 10px",fontSize:"10px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",background:"#fff",outline:"none",cursor:"pointer"}}>
+        {opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+      </select>
+      <span style={{position:"absolute",right:"7px",top:"50%",transform:"translateY(-50%)",pointerEvents:"none",fontSize:"10px",opacity:0.6}}>▾</span>
+    </div>
+  );
+}
+
+/* ── Progress Bar ── */
+function PBar({val,color}){
+  return(
+    <div style={{flex:1,height:"6px",border:"1px solid rgba(0,0,0,0.15)",background:"#efefef",overflow:"hidden",borderRadius:"0"}}>
+      <div style={{height:"100%",width:`${val}%`,background:color||"#ff3b00",transition:"width 0.4s"}}/>
+    </div>
+  );
+}
+
+/* ── Task Card ── */
+function TCard({task,selected,onSelect,onEdit,onDel,onDone}){
+  const p=PC[task.pri]; const s=SC[task.status];
+  const [hov,setHov]=useState(false);
+  return(
+    <div onClick={onSelect}
+      onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+      style={{border:`2px solid ${selected?"#ff3b00":"#0a0a0a"}`,background:"#fff",cursor:"pointer",
+        boxShadow:selected?"4px 4px 0 #ff3b00":hov?"3px 3px 0 #0a0a0a":"none",
+        transform:selected||hov?"translateY(-1px)":"none",transition:"all 0.15s"}}>
+      <div style={{height:"4px",background:p.bg}}/>
+      <div style={{padding:"14px"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"8px",marginBottom:"6px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",flex:1,minWidth:0}}>
+            <span style={{fontSize:"15px",flexShrink:0}}>{task.pri==="high"?"🚀":task.pri==="medium"?"📘":"📌"}</span>
+            <p style={{fontWeight:900,fontSize:"13px",lineHeight:1.3,textDecoration:task.status==="completed"?"line-through":"none",opacity:task.status==="completed"?0.45:1}} className="lc2">{task.title}</p>
+          </div>
+          <span className="mono" style={{fontSize:"9px",fontWeight:700,padding:"2px 6px",background:p.bg,color:p.fg,flexShrink:0,border:`1px solid ${p.bd}`}}>{p.label}</span>
+        </div>
+        <p style={{fontSize:"11px",color:"#666",marginBottom:"10px",paddingLeft:"23px"}} className="lc1">{task.desc}</p>
+        <div style={{paddingLeft:"23px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
+            <PBar val={task.prog} color={task.prog===100?"#22c55e":"#ff3b00"}/>
+            <span className="mono" style={{fontSize:"10px",fontWeight:700,width:"28px",textAlign:"right",flexShrink:0}}>{task.prog}%</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"4px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+              <span className="mono" style={{fontSize:"10px",fontWeight:700,color:s.fg,display:"flex",alignItems:"center",gap:"4px"}}>
+                <span style={{width:"6px",height:"6px",borderRadius:"50%",background:s.dot,display:"inline-block",flexShrink:0}}/>
+                {s.label}
+              </span>
+              <span className="mono" style={{fontSize:"10px",color:"#888"}}>Due: {task.due}</span>
+            </div>
+            <div style={{display:"flex",gap:"2px"}} onClick={e=>e.stopPropagation()}>
+              <Btn onClick={onEdit} title="Edit">✏️</Btn>
+              <Btn onClick={onDel} title="Delete">🗑️</Btn>
+              {task.status!=="completed"&&(
+                <button onClick={onDone} className="mono"
+                  style={{padding:"3px 7px",border:"2px solid #0a0a0a",background:"none",fontSize:"9px",fontWeight:700,textTransform:"uppercase",cursor:"pointer",display:"flex",alignItems:"center",gap:"2px",color:"#0a0a0a"}}>
+                  ✓ Done
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Btn({onClick,title,children,style={}}){
+  const [h,setH]=useState(false);
+  return(
+    <button onClick={onClick} title={title}
+      onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
+      style={{padding:"4px 6px",background:h?"#efefef":"none",border:"1px solid "+(h?"#ccc":"transparent"),fontSize:"13px",cursor:"pointer",...style}}>
+      {children}
+    </button>
+  );
+}
+
+/* ── Task Detail Panel ── */
+function TDetail({task,onEdit,onDel,onClose}){
+  const p=PC[task.pri]; const s=SC[task.status];
+  return(
+    <div style={{border:"2px solid #0a0a0a",background:"#fff",display:"flex",flexDirection:"column"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderBottom:"2px solid #0a0a0a",background:"#0a0a0a",color:"#fff"}}>
+        <span className="mono" style={{fontSize:"10px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.15em"}}>Task Detail</span>
+        <button onClick={onClose} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:"16px",lineHeight:1}}>✕</button>
+      </div>
+      <div style={{padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
+        <div>
+          <p className="mono" style={{fontSize:"9px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",color:"#666",marginBottom:"3px"}}>Title</p>
+          <p style={{fontWeight:900,fontSize:"15px",lineHeight:1.3}}>{task.title}</p>
+        </div>
+        <div>
+          <p className="mono" style={{fontSize:"9px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",color:"#666",marginBottom:"3px"}}>Description</p>
+          <p style={{fontSize:"12px",color:"#555",lineHeight:1.6}}>{task.desc||"No description."}</p>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+          <div>
+            <p className="mono" style={{fontSize:"9px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",color:"#666",marginBottom:"3px"}}>Priority</p>
+            <span className="mono" style={{fontSize:"10px",fontWeight:700,padding:"3px 7px",background:p.bg,color:p.fg,border:`1px solid ${p.bd}`,display:"inline-block"}}>
+              {task.pri==="high"?"🔴":task.pri==="medium"?"🟡":"🟢"} {p.label}
+            </span>
+          </div>
+          <div>
+            <p className="mono" style={{fontSize:"9px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",color:"#666",marginBottom:"3px"}}>Status</p>
+            <span className="mono" style={{fontSize:"10px",fontWeight:700,padding:"3px 7px",background:s.bg,color:s.fg,border:`1px solid ${s.dot}`,display:"inline-flex",alignItems:"center",gap:"5px"}}>
+              <span style={{width:"6px",height:"6px",borderRadius:"50%",background:s.dot,flexShrink:0}}/>{s.label}
+            </span>
+          </div>
+        </div>
+        <div>
+          <p className="mono" style={{fontSize:"9px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",color:"#666",marginBottom:"3px"}}>Due Date</p>
+          <p style={{fontWeight:700,fontSize:"13px"}}>📅 {task.due}</p>
+        </div>
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
+            <p className="mono" style={{fontSize:"9px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",color:"#666"}}>Progress</p>
+            <p className="mono" style={{fontSize:"11px",fontWeight:900}}>{task.prog}%</p>
+          </div>
+          <div style={{height:"10px",border:"2px solid #0a0a0a",background:"#efefef",overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${task.prog}%`,background:task.prog===100?"#22c55e":"#ff3b00",transition:"width 0.5s"}}/>
+          </div>
+          <p style={{fontSize:"10px",color:"#888",marginTop:"3px"}} className="mono">
+            {"█".repeat(Math.round(task.prog/10))}{"░".repeat(10-Math.round(task.prog/10))} {task.prog}%
+          </p>
+        </div>
+        <div>
+          <p className="mono" style={{fontSize:"9px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",color:"#666",marginBottom:"3px"}}>Tag</p>
+          <span className="mono" style={{fontSize:"10px",fontWeight:700,padding:"2px 8px",border:"2px solid #0a0a0a",background:"#efefef"}}>{task.tag}</span>
+        </div>
+      </div>
+      <div style={{padding:"12px",borderTop:"2px solid #0a0a0a",display:"flex",gap:"8px"}}>
+        <HoverBtn onClick={onEdit} base={{border:"2px solid #0a0a0a",background:"#fff",color:"#0a0a0a"}} hover={{background:"#efefef"}}>✏️ Edit</HoverBtn>
+        <HoverBtn onClick={onDel} base={{border:"2px solid #ff3b00",background:"#ff3b00",color:"#fff"}} hover={{opacity:"0.82"}}>🗑️ Delete</HoverBtn>
+      </div>
+    </div>
+  );
+}
+
+function HoverBtn({onClick,base,hover,children}){
+  const [h,setH]=useState(false);
+  return(
+    <button onClick={onClick} className="mono"
+      onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
+      style={{flex:1,padding:"9px",fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"5px",transition:"all 0.15s",...base,...(h?hover:{})}}>
+      {children}
+    </button>
+  );
+}
+
+/* ── Task Modal ── */
+function TModal({task,onSave,onClose}){
+  const isEdit=!!task.id;
+  const [f,setF]=useState({title:"",desc:"",pri:"medium",status:"pending",due:todayStr(),prog:0,tag:"Learning",...task});
+  const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  const submit=e=>{
+    e.preventDefault();
+    if(!f.title.trim())return;
+    onSave({id:task.id||uid(),title:f.title,desc:f.desc||"",pri:f.pri,status:f.status,due:f.due||todayStr(),prog:Number(f.prog)||0,tag:f.tag||"Other"});
+    onClose();
+  };
+  const inp={border:"2px solid #0a0a0a",padding:"8px 12px",fontSize:"13px",outline:"none",width:"100%",background:"#f5f5f5"};
+  const lbl={display:"block",fontSize:"10px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:"4px",fontFamily:"'Geist Mono',monospace",color:"#333"};
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",background:"rgba(0,0,0,0.55)"}}
+      onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{width:"100%",maxWidth:"480px",background:"#fff",border:"2px solid #0a0a0a",boxShadow:"6px 6px 0 #0a0a0a",maxHeight:"90vh",overflowY:"auto"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"2px solid #0a0a0a",background:"#0a0a0a",color:"#fff",position:"sticky",top:0,zIndex:1}}>
+          <span className="mono" style={{fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.15em"}}>{isEdit?"✏ Edit Task":"+ New Task"}</span>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:"18px",lineHeight:1}}>✕</button>
+        </div>
+        <form onSubmit={submit} style={{padding:"20px",display:"flex",flexDirection:"column",gap:"12px"}}>
+          <div><label style={lbl}>Title *</label><input required value={f.title} onChange={e=>set("title",e.target.value)} placeholder="Task title" style={inp}/></div>
+          <div><label style={lbl}>Description</label><textarea value={f.desc} onChange={e=>set("desc",e.target.value)} rows="2" placeholder="More context..." style={{...inp,resize:"none"}}/></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+            <div><label style={lbl}>Priority</label>
+              <div style={{position:"relative"}}>
+                <select value={f.pri} onChange={e=>set("pri",e.target.value)} style={{...inp,cursor:"pointer",paddingRight:"28px"}}>
+                  <option value="high">🔴 High</option><option value="medium">🟡 Medium</option><option value="low">🟢 Low</option>
+                </select>
+                <span style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",pointerEvents:"none",fontSize:"11px"}}>▾</span>
+              </div>
+            </div>
+            <div><label style={lbl}>Status</label>
+              <div style={{position:"relative"}}>
+                <select value={f.status} onChange={e=>set("status",e.target.value)} style={{...inp,cursor:"pointer",paddingRight:"28px"}}>
+                  <option value="pending">⏳ Pending</option><option value="in_progress">🚀 In Progress</option><option value="completed">✅ Completed</option>
+                </select>
+                <span style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",pointerEvents:"none",fontSize:"11px"}}>▾</span>
+              </div>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+            <div><label style={lbl}>Due Date</label><input type="date" value={f.due} onChange={e=>set("due",e.target.value)} style={inp}/></div>
+            <div><label style={lbl}>Progress %</label><input type="number" min="0" max="100" value={f.prog} onChange={e=>set("prog",e.target.value)} style={inp}/></div>
+          </div>
+          <div><label style={lbl}>Tag</label><input value={f.tag} onChange={e=>set("tag",e.target.value)} placeholder="e.g. Portfolio" style={inp}/></div>
+          <div style={{display:"flex",gap:"8px",paddingTop:"4px"}}>
+            <HoverBtn onClick={onClose} base={{border:"2px solid #0a0a0a",background:"#fff",color:"#0a0a0a",flex:1,padding:"10px",fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",cursor:"pointer"}} hover={{background:"#efefef"}}>Cancel</HoverBtn>
+            <button type="submit" className="mono"
+              style={{flex:1,padding:"10px",border:"2px solid #0a0a0a",background:"#0a0a0a",color:"#fff",fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",cursor:"pointer"}}>
+              {isEdit?"Update →":"Create →"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ── Nav Item ── */
+function NavItem({icon,label,active,badge,onClick}){
+  const [h,setH]=useState(false);
+  return(
+    <button onClick={onClick}
+      onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
+      style={{width:"100%",display:"flex",alignItems:"center",gap:"10px",padding:"10px 12px",
+        border:`2px solid ${active?"#0a0a0a":"transparent"}`,
+        background:active?"#0a0a0a":h?"#efefef":"transparent",
+        color:active?"#fff":"#0a0a0a",fontWeight:700,fontSize:"13px",
+        textAlign:"left",marginBottom:"2px",cursor:"pointer",transition:"all 0.15s"}}>
+      <span style={{fontSize:"15px"}}>{icon}</span>{label}
+      {badge>0&&<span className="mono" style={{marginLeft:"auto",fontSize:"9px",fontWeight:700,padding:"1px 6px",background:"#ff3b00",color:"#fff"}}>{badge}</span>}
+    </button>
+  );
+}
+
+/* ── CSS Bar Chart ── */
+function BarChartCSS({data}){
+  const max=Math.max(...data.map(d=>d.done+d.pend));
+  return(
+    <div>
+      <div style={{display:"flex",alignItems:"flex-end",gap:"6px",height:"150px",padding:"0 4px"}}>
+        {data.map(d=>(
+          <div key={d.day} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",height:"100%",gap:"2px"}}>
+            <div style={{width:"100%",display:"flex",flexDirection:"column",gap:"2px",justifyContent:"flex-end"}}>
+              <div style={{width:"100%",background:"#ff3b00",height:`${(d.pend/max)*120}px`,transition:"height 0.5s"}} title={`Pending: ${d.pend}`}/>
+              <div style={{width:"100%",background:"#0a0a0a",height:`${(d.done/max)*120}px`,transition:"height 0.5s"}} title={`Completed: ${d.done}`}/>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:"6px",padding:"4px 4px 0"}}>
+        {data.map(d=>(
+          <div key={d.day} style={{flex:1,textAlign:"center"}}>
+            <span className="mono" style={{fontSize:"9px",fontWeight:700,color:"#666"}}>{d.day}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:"14px",marginTop:"8px",paddingLeft:"4px"}}>
+        <span className="mono" style={{fontSize:"10px",display:"flex",alignItems:"center",gap:"5px"}}>
+          <span style={{width:"10px",height:"10px",background:"#0a0a0a",display:"inline-block"}}/> Completed
+        </span>
+        <span className="mono" style={{fontSize:"10px",display:"flex",alignItems:"center",gap:"5px"}}>
+          <span style={{width:"10px",height:"10px",background:"#ff3b00",display:"inline-block"}}/> Pending
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main App ── */
+function App(){
+  const [tasks,setTasks]=useState(INIT);
+  const [nav,setNav]=useState("dashboard");
+  const [selId,setSelId]=useState("1");
+  const [modal,setModal]=useState(null);
+  const [search,setSearch]=useState("");
+  const [sfilt,setSfilt]=useState("all");
+  const [pfilt,setPfilt]=useState("all");
+  const [sort,setSort]=useState("due");
+  const [sbOpen,setSbOpen]=useState(false);
+
+  const counts={
+    total:tasks.length,
+    pending:tasks.filter(t=>t.status==="pending").length,
+    in_progress:tasks.filter(t=>t.status==="in_progress").length,
+    completed:tasks.filter(t=>t.status==="completed").length,
+    dueToday:tasks.filter(t=>t.due===todayStr()&&t.status!=="completed").length,
+  };
+
+  const save=t=>setTasks(ts=>ts.find(x=>x.id===t.id)?ts.map(x=>x.id===t.id?t:x):[t,...ts]);
+  const del=id=>{setTasks(ts=>ts.filter(t=>t.id!==id));if(selId===id)setSelId(null);};
+  const done=id=>setTasks(ts=>ts.map(t=>t.id===id?{...t,status:"completed",prog:100}:t));
+
+  const filtered=useMemo(()=>{
+    let l=[...tasks];
+    if(nav==="pending")l=l.filter(t=>t.status==="pending");
+    else if(nav==="progress")l=l.filter(t=>t.status==="in_progress");
+    else if(nav==="completed")l=l.filter(t=>t.status==="completed");
+    if(sfilt!=="all")l=l.filter(t=>t.status===sfilt);
+    if(pfilt!=="all")l=l.filter(t=>t.pri===pfilt);
+    if(search)l=l.filter(t=>t.title.toLowerCase().includes(search.toLowerCase())||t.tag.toLowerCase().includes(search.toLowerCase()));
+    l.sort((a,b)=>sort==="due"?a.due.localeCompare(b.due):sort==="pri"?["high","medium","low"].indexOf(a.pri)-["high","medium","low"].indexOf(b.pri):b.prog-a.prog);
+    return l;
+  },[tasks,nav,sfilt,pfilt,search,sort]);
+
+  const grouped=useMemo(()=>{
+    const g={high:[],medium:[],low:[]};
+    filtered.forEach(t=>g[t.pri].push(t));
+    return g;
+  },[filtered]);
+
+  const selTask=tasks.find(t=>t.id===selId)||null;
+  const isDash=nav==="dashboard";
+  const isAna=nav==="analytics";
+  const isCal=nav==="calendar";
+  const isProf=nav==="profile";
+  const isList=!isDash&&!isAna&&!isCal&&!isProf;
+
+  const go=(id)=>{setNav(id);setSbOpen(false);};
+
+  const TaskSection=({title})=>{
+    const grp=grouped[title];
+    if(!grp.length)return null;
+    const cfg=PC[title];
+    return(
+      <div style={{marginBottom:"20px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
+          <div style={{width:"10px",height:"10px",border:`2px solid ${cfg.bd}`,background:cfg.bg}}/>
+          <span className="mono" style={{fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em"}}>
+            {title==="high"?"🔴":title==="medium"?"🟡":"🟢"} {cfg.label} Priority ({grp.length})
+          </span>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+          {grp.map(task=>(
+            <TCard key={task.id} task={task} selected={selId===task.id}
+              onSelect={()=>setSelId(task.id)} onEdit={()=>setModal(task)}
+              onDel={()=>del(task.id)} onDone={()=>done(task.id)}/>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const Filters=()=>(
+    <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:"8px",marginBottom:"16px"}}>
+      <span className="mono" style={{fontSize:"10px",fontWeight:700,color:"#666",textTransform:"uppercase"}}>🔽 Filters:</span>
+      <FD value={sfilt} onChange={setSfilt} opts={[["all","All Status"],["pending","Pending"],["in_progress","In Progress"],["completed","Completed"]]}/>
+      <FD value={pfilt} onChange={setPfilt} opts={[["all","All Priority"],["high","High"],["medium","Medium"],["low","Low"]]}/>
+      <FD value={sort} onChange={setSort} opts={[["due","Due Date"],["pri","Priority"],["prog","Progress"]]}/>
+    </div>
+  );
+
+  const DetailOrEmpty=()=>selTask?(
+    <TDetail task={selTask} onEdit={()=>setModal(selTask)} onDel={()=>del(selTask.id)} onClose={()=>setSelId(null)}/>
+  ):(
+    <div style={{border:"2px dashed #0a0a0a",padding:"40px 20px",textAlign:"center"}}>
+      <p className="mono" style={{fontSize:"11px",color:"#888"}}>Click a task to see details</p>
+    </div>
+  );
+
+  return(
+    <div style={{height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+
+      {/* TOP HEADER */}
+      <header style={{background:"#0a0a0a",color:"#fff",borderBottom:"2px solid #0a0a0a",flexShrink:0}}>
+        <div style={{padding:"0 16px",height:"54px",display:"flex",alignItems:"center",gap:"10px"}}>
+          <button onClick={()=>setSbOpen(o=>!o)} style={{color:"#fff",cursor:"pointer",fontSize:"20px",padding:"2px 4px"}}>☰</button>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
+            <div className="mono" style={{width:"26px",height:"26px",background:"#ff3b00",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:"10px",color:"#fff"}}>TM</div>
+            <span style={{fontWeight:900,fontSize:"15px"}}>TaskMaster</span>
+          </div>
+          <nav style={{display:"flex",gap:"3px",marginLeft:"8px"}}>
+            {[["dashboard","🏠 Dashboard"],["all","📋 Tasks"],["analytics","📊 Analytics"],["calendar","📅 Calendar"]].map(([id,lbl])=>(
+              <button key={id} onClick={()=>setNav(id)} className="mono"
+                style={{padding:"5px 9px",border:`1px solid ${nav===id?"#ff3b00":"transparent"}`,background:nav===id?"#ff3b00":"transparent",color:nav===id?"#fff":"rgba(255,255,255,0.6)",fontSize:"10px",fontWeight:700,textTransform:"uppercase",cursor:"pointer"}}>
+                {lbl}
+              </button>
+            ))}
+          </nav>
+          <div style={{flex:1,maxWidth:"260px",position:"relative",marginLeft:"auto"}}>
+            <span style={{position:"absolute",left:"9px",top:"50%",transform:"translateY(-50%)",opacity:0.4,fontSize:"13px"}}>🔍</span>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search tasks..."
+              style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",padding:"6px 10px 6px 30px",fontSize:"12px",color:"#fff",outline:"none",fontFamily:"inherit"}}/>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
+            <span style={{fontSize:"16px",position:"relative"}}>
+              🔔{counts.dueToday>0&&<span style={{position:"absolute",top:"-4px",right:"-4px",width:"14px",height:"14px",background:"#ff3b00",borderRadius:"50%",fontSize:"8px",fontWeight:700,display:"inline-flex",alignItems:"center",justifyContent:"center",fontFamily:"'Geist Mono',monospace",color:"#fff"}}>{counts.dueToday}</span>}
+            </span>
+            <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+              <div style={{width:"26px",height:"26px",background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:"9px"}}>SM</div>
+              <span style={{fontWeight:700,fontSize:"12px"}}>Sahana M</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div style={{flex:1,display:"flex",overflow:"hidden",position:"relative"}}>
+
+        {/* SIDEBAR OVERLAY */}
+        {sbOpen&&<div onClick={()=>setSbOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:30}}/>}
+
+        {/* SIDEBAR */}
+        <aside style={{width:"196px",flexShrink:0,borderRight:"2px solid #0a0a0a",background:"#fff",display:"flex",flexDirection:"column",overflowY:"auto",zIndex:31,transition:"transform 0.2s",position:"relative"}}>
+          <nav style={{padding:"10px",flex:1}}>
+            <NavItem icon="🏠" label="Dashboard" active={nav==="dashboard"} onClick={()=>go("dashboard")}/>
+            <NavItem icon="📋" label="All Tasks" active={nav==="all"} onClick={()=>go("all")}/>
+            <NavItem icon="⏳" label="Pending" active={nav==="pending"} badge={counts.pending} onClick={()=>go("pending")}/>
+            <NavItem icon="🚀" label="In Progress" active={nav==="progress"} badge={counts.in_progress} onClick={()=>go("progress")}/>
+            <NavItem icon="✅" label="Completed" active={nav==="completed"} onClick={()=>go("completed")}/>
+            <NavItem icon="📅" label="Calendar" active={nav==="calendar"} onClick={()=>go("calendar")}/>
+            <NavItem icon="📊" label="Analytics" active={nav==="analytics"} onClick={()=>go("analytics")}/>
+            <NavItem icon="⚙️" label="Settings" active={false} onClick={()=>{}}/>
+          </nav>
+          <div style={{padding:"10px",borderTop:"2px solid #0a0a0a"}}>
+            <NavItem icon="👤" label="Profile" active={nav==="profile"} onClick={()=>go("profile")}/>
+            <NavItem icon="🚪" label="Logout" active={false} onClick={()=>{}}/>
+          </div>
+        </aside>
+
+        {/* MAIN */}
+        <main style={{flex:1,overflowY:"auto",background:"#fff"}}>
+
+          {/* DASHBOARD */}
+          {isDash&&(
+            <div style={{padding:"20px 22px"}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"18px",gap:"10px"}}>
+                <div>
+                  <h1 style={{fontSize:"20px",fontWeight:900,lineHeight:1}}>📊 Overview</h1>
+                  <p className="mono" style={{fontSize:"10px",color:"#666",marginTop:"3px"}}>Welcome back, Sahana M</p>
+                </div>
+                <button onClick={()=>setModal({})} className="mono"
+                  style={{display:"flex",alignItems:"center",gap:"5px",padding:"7px 14px",background:"#ff3b00",color:"#fff",border:"2px solid #ff3b00",fontSize:"10px",fontWeight:700,textTransform:"uppercase",cursor:"pointer",flexShrink:0}}>
+                  + Task
+                </button>
+              </div>
+
+              {/* Stats */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"8px",marginBottom:"18px"}}>
+                <Stat icon="📋" label="Total" value={counts.total} sub="+12%"/>
+                <Stat icon="⏳" label="Pending" value={counts.pending}/>
+                <Stat icon="🚀" label="In Progress" value={counts.in_progress} dark/>
+                <Stat icon="✅" label="Completed" value={counts.completed}/>
+                <Stat icon="📅" label="Due Today" value={counts.dueToday} sub={counts.dueToday>0?"!":null}/>
+              </div>
+
+              <Filters/>
+
+              {/* Grid */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 290px",gap:"16px",alignItems:"start"}}>
+                <div>
+                  <TaskSection title="high"/>
+                  <TaskSection title="medium"/>
+                  <TaskSection title="low"/>
+                  {!filtered.length&&(
+                    <div style={{border:"2px dashed #0a0a0a",padding:"48px",textAlign:"center"}}>
+                      <p style={{fontWeight:900,fontSize:"18px",marginBottom:"4px"}}>0 tasks</p>
+                      <p className="mono" style={{fontSize:"10px",color:"#888"}}>No tasks match your filters</p>
+                    </div>
+                  )}
+                </div>
+                <div style={{position:"sticky",top:"16px"}}><DetailOrEmpty/></div>
+              </div>
+            </div>
+          )}
+
+          {/* LIST VIEWS */}
+          {isList&&(
+            <div style={{padding:"20px 22px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
+                <h1 style={{fontSize:"20px",fontWeight:900}}>
+                  {nav==="all"?"📋 All Tasks":nav==="pending"?"⏳ Pending":nav==="progress"?"🚀 In Progress":"✅ Completed"}
+                </h1>
+                <button onClick={()=>setModal({})} className="mono"
+                  style={{display:"flex",alignItems:"center",gap:"5px",padding:"7px 14px",background:"#ff3b00",color:"#fff",border:"2px solid #ff3b00",fontSize:"10px",fontWeight:700,textTransform:"uppercase",cursor:"pointer"}}>
+                  + New Task
+                </button>
+              </div>
+              <Filters/>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 280px",gap:"14px",alignItems:"start"}}>
+                <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                  {filtered.map(task=>(
+                    <TCard key={task.id} task={task} selected={selId===task.id}
+                      onSelect={()=>setSelId(task.id)} onEdit={()=>setModal(task)}
+                      onDel={()=>del(task.id)} onDone={()=>done(task.id)}/>
+                  ))}
+                  {!filtered.length&&<div style={{border:"2px dashed #0a0a0a",padding:"40px",textAlign:"center"}}><p style={{fontWeight:900}}>No tasks found</p></div>}
+                </div>
+                <div style={{position:"sticky",top:"16px"}}><DetailOrEmpty/></div>
+              </div>
+            </div>
+          )}
+
+          {/* ANALYTICS */}
+          {isAna&&(
+            <div style={{padding:"20px 22px",maxWidth:"880px"}}>
+              <h1 style={{fontSize:"20px",fontWeight:900,marginBottom:"18px"}}>📊 Analytics</h1>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"18px"}}>
+                <Stat icon="📋" label="Total Tasks" value={counts.total} sub="+12%"/>
+                <Stat icon="⏳" label="Pending" value={counts.pending}/>
+                <Stat icon="🚀" label="In Progress" value={counts.in_progress} dark/>
+                <Stat icon="✅" label="Completed" value={counts.completed}/>
+              </div>
+              <div style={{border:"2px solid #0a0a0a",padding:"18px",background:"#fff",marginBottom:"14px"}}>
+                <p className="mono" style={{fontSize:"10px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:"14px"}}>Task Completion — This Week</p>
+                <BarChartCSS data={WEEK}/>
+              </div>
+              <div style={{border:"2px solid #0a0a0a",padding:"18px",background:"#fff"}}>
+                <p className="mono" style={{fontSize:"10px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:"14px"}}>Task Progress</p>
+                {tasks.filter(t=>t.status!=="completed").slice(0,6).map(t=>(
+                  <div key={t.id} style={{marginBottom:"12px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:"3px"}}>
+                      <span style={{fontSize:"12px",fontWeight:700,maxWidth:"75%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.title}</span>
+                      <span className="mono" style={{fontSize:"11px",fontWeight:900}}>{t.prog}%</span>
+                    </div>
+                    <div style={{height:"8px",border:"2px solid #0a0a0a",background:"#efefef",overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${t.prog}%`,background:"#ff3b00",transition:"width 0.4s"}}/>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* CALENDAR */}
+          {isCal&&(
+            <div style={{padding:"20px 22px",maxWidth:"880px"}}>
+              <h1 style={{fontSize:"20px",fontWeight:900,marginBottom:"18px"}}>📅 Calendar — July 2026</h1>
+              <div style={{border:"2px solid #0a0a0a",background:"#fff",padding:"14px"}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"2px",marginBottom:"4px",textAlign:"center"}}>
+                  {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>(
+                    <div key={d} className="mono" style={{fontSize:"9px",fontWeight:700,textTransform:"uppercase",padding:"5px 0"}}>{d}</div>
+                  ))}
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"2px"}}>
+                  {[0,1,2].map(i=><div key={"e"+i}/>)}
+                  {Array.from({length:31},(_,i)=>{
+                    const day=i+1;
+                    const ds=`2026-07-${String(day).padStart(2,"0")}`;
+                    const dt=tasks.filter(t=>t.due===ds);
+                    const isT=ds===todayStr();
+                    return(
+                      <div key={day} style={{minHeight:"52px",padding:"3px",border:`1px solid ${isT?"#ff3b00":"rgba(0,0,0,0.08)"}`,background:isT?"#fff5f2":"#fff"}}>
+                        <p className="mono" style={{fontSize:"10px",fontWeight:900,color:isT?"#ff3b00":"#0a0a0a",marginBottom:"2px"}}>{day}</p>
+                        {dt.slice(0,2).map(t=>(
+                          <div key={t.id} style={{fontSize:"8px",fontWeight:700,padding:"1px 3px",marginBottom:"1px",background:PC[t.pri].bg,color:PC[t.pri].fg,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.title}</div>
+                        ))}
+                        {dt.length>2&&<p style={{fontSize:"8px",color:"#888"}}>+{dt.length-2}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PROFILE */}
+          {isProf&&(
+            <div style={{padding:"20px 22px",maxWidth:"520px"}}>
+              <h1 style={{fontSize:"20px",fontWeight:900,marginBottom:"18px"}}>👤 Profile</h1>
+              <div style={{border:"2px solid #0a0a0a",background:"#fff",padding:"22px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"14px",marginBottom:"18px",paddingBottom:"16px",borderBottom:"2px solid #0a0a0a"}}>
+                  <div style={{width:"56px",height:"56px",background:"#0a0a0a",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",fontWeight:900,border:"2px solid #0a0a0a",flexShrink:0}}>SM</div>
+                  <div>
+                    <p style={{fontWeight:900,fontSize:"18px"}}>Sahana M</p>
+                    <p style={{color:"#666",fontSize:"12px"}}>sahana123.mr@gmail.com</p>
+                    <p className="mono" style={{color:"#888",fontSize:"9px",marginTop:"2px"}}>3rd Year · CSE · R.M.D Engineering College</p>
+                  </div>
+                </div>
+                {[["Full Name","Sahana M"],["Email","sahana123.mr@gmail.com"],["Phone","6381158984"],["College","R.M.D Engineering College"],["Degree","B.E. Computer Science & Engineering"],["Batch","Aug 2024 — May 2028"],["LinkedIn","linkedin.com/in/sahana-m-1aa16a32b"]].map(([l,v])=>(
+                  <div key={l} style={{borderBottom:"1px solid #f0f0f0",paddingBottom:"9px",marginBottom:"9px"}}>
+                    <p className="mono" style={{fontSize:"9px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.15em",color:"#888",marginBottom:"2px"}}>{l}</p>
+                    <p style={{fontSize:"13px",fontWeight:700}}>{v}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+
+      {modal&&<TModal task={modal} onSave={save} onClose={()=>setModal(null)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
